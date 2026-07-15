@@ -1,0 +1,82 @@
+services:
+  database:
+    build: requirements/mariadb
+    container_name: mariadb
+    volumes:
+      - databasefiles:/var/lib/mysql
+    networks:
+      - main
+    env_file:
+      - .env
+    secrets:
+      - db_root_password
+      - db_password
+    restart: on-failure
+
+  nginx:
+    build: requirements/nginx
+    container_name: nginx
+    ports:
+      - "443:443"
+    depends_on:
+      - wordpress
+    volumes:
+      - wordpressfiles:/srv/www
+    networks:
+      - main
+    env_file:
+      - .env
+    restart: on-failure
+
+  wordpress:
+    build: requirements/wordpress
+    container_name: wp-php
+    depends_on:
+      - database
+    volumes:
+      - wordpressfiles:/srv/www
+    networks:
+      - main
+    env_file:
+      - .env
+    secrets:
+      - db_password
+      - wp_user_password
+      - wp_admin_password
+      - wp_admin_email
+      - wp_admin_username
+
+    restart: on-failure
+
+networks:
+  main:
+    driver: bridge
+    name: main
+
+volumes:
+  wordpressfiles:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${USER}/data/wordpress
+  databasefiles:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${USER}/data/mariadb
+
+secrets:
+  db_root_password:
+    file: ../secrets/db_root_password.txt
+  db_password:
+    file: ../secrets/db_password.txt
+  wp_admin_password:
+    file: ../secrets/wp_admin_password.txt
+  wp_user_password:
+    file: ../secrets/wp_user_password.txt
+  wp_admin_email:
+    file: ../secrets/wp_admin_email.txt
+  wp_admin_username:
+    file: ../secrets/wp_admin_username.txt

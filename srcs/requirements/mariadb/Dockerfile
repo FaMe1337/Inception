@@ -1,10 +1,17 @@
 FROM debian:oldstable
 
-RUN apt update && apt install -y mariadb-server
+RUN apt update && apt install -y mariadb-server mariadb-client && rm -rf /var/lib/apt/lists/*
 
-RUN sed -i 's/^bind-address.*/bind-address = 0.0.0.0/' /etc/mysql/mariadb.conf.d/50-server.cnf
+RUN mkdir -p /run/mysqld \  
+    && chown -R mysql:mysql /run/mysqld
 
-COPY tools/init.sh /init.sh
-RUN chmod +x /init.sh
+RUN sed -i \
+    's/^bind-address.*/bind-address = 0.0.0.0/' \
+    /etc/mysql/mariadb.conf.d/50-server.cnf
 
-CMD ["/init.sh"]
+COPY tools/setup.sh /usr/local/bin/setup.sh
+RUN chmod +x /usr/local/bin/setup.sh
+
+EXPOSE 3306
+
+ENTRYPOINT ["/usr/local/bin/setup.sh"]
